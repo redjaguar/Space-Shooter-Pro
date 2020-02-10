@@ -164,3 +164,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   powerupDurationSeconds: 5
   powerupSpeed: 3
+  _audioClip: {fileID: 8300000, guid: 5ee343246919d2b4bba63ae629e95494, type: 3}

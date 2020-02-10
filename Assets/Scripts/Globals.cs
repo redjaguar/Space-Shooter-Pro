@@ -8,6 +8,9 @@ using UnityEngine;
 namespace Assets.Helper_Classes
 {
 
+    /// <summary>
+    /// Contains global variables that are not subject to change during execution
+    /// </summary>
     public class Globals
     {
         static Globals()
@@ -16,14 +19,43 @@ namespace Assets.Helper_Classes
             ScreenBounds =new Bounds(new Vector3(0, 1.25f, 0), new Vector3(18.5f, 12.5f));
         }
 
+        /// <summary>
+        /// Screen bounds for <see cref="Player"/> movement.
+        /// </summary>
         public static Bounds PlayerBounds { get; }
+
+        /// <summary>
+        /// Screen bounds for the game screen.
+        /// </summary>
         public static Bounds ScreenBounds { get; }
-        public static int NumberOfPlayerStartingLives => 3;
+
     }
 
+    /// <summary>
+    /// Contains index values for all scenes which are accessible by name.
+    /// </summary>
     public static class Scenes
     {
+        /// <summary>
+        /// The index for the "Main Menu" scene.
+        /// </summary>
         public static readonly int MainMenu = 0;
+
+        /// <summary>
+        /// The  index for the "Game" scene.
+        /// </summary>
         public static readonly int Game = 1;
+    }
+
+    /// <summary>
+    /// Contains cached index values for animation triggers accessible by name.
+    /// </summary>
+    public static class AnimationTriggers
+    {
+        /// <summary>
+        /// Cached index value for the explosion trigger on the explosion animation clip.
+        /// </summary>
+        public static readonly int EnemyDeath = Animator.StringToHash("OnEnemyDeath");
+
     }
 }

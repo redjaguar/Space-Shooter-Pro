@@ -35,6 +35,11 @@ public class UIManager : MonoBehaviour
         _player.PlayerScoreChanged += (p) => _scoreText.text = $"Score: {p.Score}";
         _player.PlayerDeath += (p) =>
         {
+            if (p.Lives < 0)
+            {
+                return;
+            }
+
             _livesImage.sprite = _livesSprites[p.Lives];
             if (p.Lives == 0)
             {
@@ -56,6 +61,14 @@ public class UIManager : MonoBehaviour
         _restartText = GameObject.Find("Restart_Text")?.GetComponent<Text>();
         Assert.IsNotNull(_restartText, "_restartText != null");
         _restartText.gameObject.SetActive(false);
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
     }
 
     IEnumerator GameOverFlicker()
@@ -92,9 +105,5 @@ public class UIManager : MonoBehaviour
         //SpawnManager.Restart();
         //Player.Restart();
     }
-    // Update is called once per frame
-    //void Update()
-    //{
-        
-    //}
+   
 }

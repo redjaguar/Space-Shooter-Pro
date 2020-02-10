@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Assets.Helper_Classes;
 using UnityEngine;
 
 public class Laser : MonoBehaviour
@@ -9,11 +10,18 @@ public class Laser : MonoBehaviour
 
     private readonly float _maxY = 8.0f;
     // Update is called once per frame
+
+    public Vector3 Direction { get; set; } = Vector3.up;
+    public bool IsEnemyLaser => Direction == Vector3.down;
+
+    //public delegate void LaserCollisionEventHandler(Laser laser);
+    //public event LaserCollisionEventHandler LaserCollision;
+
     void Update()
     {
-        transform.Translate(Vector3.up * (_speed * Time.deltaTime));
+        transform.Translate(Direction * (_speed * Time.deltaTime));
 
-        if (transform.position.y >= _maxY)
+        if(!Globals.ScreenBounds.Contains(transform.position))
         {
             if (transform.parent != null)
             {

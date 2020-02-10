@@ -9,14 +9,30 @@ using UnityEngine.Serialization;
 
 namespace Assets.Scripts.Powerups
 {
+    /// <summary>
+    /// Types of powerups available.
+    /// </summary>
     public enum PowerupType
     {
+        /// <summary>
+        /// Shield powerup.
+        /// </summary>
         Shield,
+        /// <summary>
+        /// Speedup powerup.
+        /// </summary>
         Speedup,
+        /// <summary>
+        /// Triple shot powerup.
+        /// </summary>
         TripleShot
 
     }
 
+    /// <summary>
+    /// Base class for all powerups which provides the basic functionality of being collected and notifying the player which powerup has been collected.
+    /// All powerups must derive from this class. Specific behavior required for a powerup must be implemented in the child class.
+    /// </summary>
     public abstract class Powerup : MonoBehaviour
     {
         public delegate void PowerupCollectedEventHandler(Powerup powerup);
@@ -34,10 +50,18 @@ namespace Assets.Scripts.Powerups
 
         public float PowerupSpeed => powerupSpeed;
 
+        [SerializeField]
+        private AudioClip _audioClip;
+
+        void Start()
+        {
+            //_audioClip = AudioUtilities.Amplify(_audioClip, 6f);
+        }
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.tag.Equals("Player"))
             {
+                AudioSource.PlayClipAtPoint(_audioClip, transform.position);
                 PowerupCollected?.Invoke(this);
                 Destroy(this.gameObject);
             }
