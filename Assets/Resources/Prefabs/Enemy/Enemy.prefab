@@ -13,8 +13,8 @@ GameObject:
   - component: {fileID: 4337294631621657845}
   - component: {fileID: 6944711908738959097}
   - component: {fileID: 2008012592669520892}
-  - component: {fileID: 6605000731782625937}
-  - component: {fileID: 658542510497228343}
+  - component: {fileID: 4217306712860412759}
+  - component: {fileID: 3506538650810720714}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -149,7 +149,7 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 2.642984, y: 3.0019832}
   m_EdgeRadius: 0
---- !u!95 &6605000731782625937
+--- !u!95 &4217306712860412759
 Animator:
   serializedVersion: 3
   m_ObjectHideFlags: 0
@@ -168,7 +168,7 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
---- !u!82 &658542510497228343
+--- !u!82 &3506538650810720714
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -178,8 +178,8 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: a885c043fab7e46438bba03ba9dab6bc, type: 3}
-  m_PlayOnAwake: 0
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
