@@ -16,6 +16,7 @@ public class UIManager : MonoBehaviour
     private Text _scoreText;
     private Text _gameOverText;
     private Text _restartText;
+    private Slider _fuelSlider;
 
     [SerializeField]
     private Sprite[] _livesSprites;
@@ -31,6 +32,8 @@ public class UIManager : MonoBehaviour
         _scoreText = GameObject.Find("Score_Text")?.GetComponent<Text>();
         Assert.IsNotNull(_scoreText, "_scoreText != null");
 
+        _fuelSlider = GameObject.Find("Thruster_Fuel_Slider").GetComponent<Slider>();
+        Assert.IsNotNull(_fuelSlider, "_fuelSlider != null");
         
         _player.PlayerScoreChanged += (p) => _scoreText.text = $"Score: {p.Score}";
         _player.PlayerDeath += (p) =>
@@ -48,6 +51,12 @@ public class UIManager : MonoBehaviour
                 StartCoroutine(GameOverFlicker());
                 StartCoroutine(CheckForReset());
             }
+        };
+        _player.Thruster.FuelLevelChanged += fuelLevel =>
+        {
+            Debug.Log($"_fuelSlider.value before update: {fuelLevel}");
+            _fuelSlider.value = fuelLevel;
+            Debug.Log($"_fuelSlider.value after update: {fuelLevel}");
         };
         _scoreText.text = "Score: 0";
         _livesImage.sprite = _livesSprites[_livesSprites.Length - 1];

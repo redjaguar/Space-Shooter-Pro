@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Globals.cs" />
     <Compile Include="Assets\Scripts\Main_Menu\MainMenu.cs" />
     <Compile Include="Assets\Scripts\Player\Player.cs" />
+    <Compile Include="Assets\Scripts\Player\Thruster.cs" />
     <Compile Include="Assets\Scripts\Powerups\Powerup.cs" />
     <Compile Include="Assets\Scripts\Powerups\ShieldPowerup.cs" />
     <Compile Include="Assets\Scripts\Powerups\SpeedPowerup.cs" />
@@ -289,6 +290,12 @@
     </Reference>
     <Reference Include="UnityEngine.XRModule">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.2.17f1/Editor/Data/Managed/UnityEngine/UnityEngine.XRModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Filebase">
+      <HintPath>D:/Code/Personal Projects/Unity Projects/1A 2D Space Shooter/Space Shooter Pro/Assets/GameDevHQ/FileBase/Plugin/Filebase.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>D:/Code/Personal Projects/Unity Projects/1A 2D Space Shooter/Space Shooter Pro/Assets/GameDevHQ/FileBase/Plugin/Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.2.17f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

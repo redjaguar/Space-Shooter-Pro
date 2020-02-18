@@ -134,6 +134,8 @@ public class Player : MonoBehaviour
     [SerializeField]
     private AudioClip _explosionAudio;
 
+    private Thruster _thruster;
+    public Thruster Thruster => _thruster;
     /// <summary>
     /// Animation to use for explosions.
     /// </summary>
@@ -156,6 +158,13 @@ public class Player : MonoBehaviour
         Assert.IsNotNull(_spriteAnimator, "_spriteAnimator != null");
 
         _audioSource = gameObject.GetComponent<AudioSource>();
+        _thruster = GameObject.Find("Thruster").GetComponent<Thruster>();
+        Assert.IsNotNull(_thruster, "_thruster != null");
+
+        _thruster.FuelLevelChanged += fuelLevel =>
+        {
+            speed /= fuelLevel <= 0 ? _thruster.SpeedScalar : 1;
+        };
     }
 
     void Update()
@@ -164,7 +173,24 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space) && CanFire)
         {
             FireLaser();
-        } 
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            if (!_thruster.IsFiring)
+            {
+                _thruster.TurnOn();
+                speed *= Thruster.SpeedScalar;
+            }
+        }
+        else if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            if (_thruster.IsFiring)
+            {
+                _thruster.TurnOff();
+                speed /= Thruster.SpeedScalar;
+            }
+        }
 
     }
 
@@ -192,11 +218,11 @@ public class Player : MonoBehaviour
                 break;
             case PowerupType.Speedup:
                 speed *= _speedBoostFactor;
-                StartCoroutine(nameof(DisableSpeedBoost));
+                StartCoroutine(DisablePowerup(powerup.PowerupType)); // nameof(DisableSpeedBoost));
                 break;
             case PowerupType.TripleShot:
                 _tripleShotActive = true;
-                StartCoroutine(nameof(DisableTripleShot));
+                StartCoroutine(DisablePowerup(powerup.PowerupType));
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -248,23 +274,46 @@ public class Player : MonoBehaviour
     /// Coroutine to disable the triple shot powerup.
     /// </summary>
     /// <returns>Coroutine</returns>
-    IEnumerator DisableTripleShot()
+    IEnumerator DisablePowerup(PowerupType powerupType)
     {
         yield return new WaitForSeconds(5f);
+        switch (powerupType)
+        {
+            case PowerupType.Shield:
+                DisableShields();
+                break;
+            case PowerupType.Speedup:
+                _speedBoostFactor /= _speedBoostFactor;
+                break;
+            case PowerupType.TripleShot:
+                _tripleShotActive = false;
+                break;
+        }
         _tripleShotActive = false;
         yield return null;
     }
 
-    /// <summary>
-    /// Coroutine to disable the speed boost.
-    /// </summary>
-    /// <returns></returns>
-    IEnumerator DisableSpeedBoost()
-    {
-        yield return new WaitForSeconds(5f);
-        _speedBoostFactor /= _speedBoostFactor;
-        yield return null;
-    }
+    ///// <summary>
+    ///// Coroutine to disable the triple shot powerup.
+    ///// </summary>
+    ///// <returns>Coroutine</returns>
+    //IEnumerator DisableTripleShot()
+    //{
+    //    yield return new WaitForSeconds(5f);
+    //    _tripleShotActive = false;
+    //    yield return null;
+    //}
+
+    ///// <summary>
+    ///// Coroutine to disable the speed boost.
+    ///// </summary>
+    ///// <returns></returns>
+    //IEnumerator DisableSpeedBoost()
+    //{
+    //    yield return new WaitForSeconds(5f);
+    //    _speedBoostFactor /= _speedBoostFactor;
+    //    yield return null;
+    //}
 
     /// <summary>
     /// Enables the shields
