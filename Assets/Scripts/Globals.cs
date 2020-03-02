@@ -58,4 +58,17 @@ namespace Assets.Helper_Classes
         public static readonly int EnemyDeath = Animator.StringToHash("OnEnemyDeath");
 
     }
+
+    public static class ExtensionMethods
+    {
+        public static bool IsInRange(this float value, float min, float max)
+        {
+            return (value >= min && value <= max);
+        }
+
+        public static bool IsInRange(this int value, float min, float max)
+        {
+            return (value >= min && value <= max);
+        }
+    }
 }

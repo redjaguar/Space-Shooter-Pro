@@ -133,6 +133,10 @@ public class Enemy : MonoBehaviour
             case "Player":
                 DoPlayerCollision(other.GetComponent<Player>());
                 break;
+            case "Mine":
+                Destroy(other.gameObject);
+                Die(10);
+                break;
             default:
 #if  DEBUG
                 print("Unknown tag: " + other.tag);
@@ -154,6 +158,8 @@ public class Enemy : MonoBehaviour
         newLaser.transform.parent = transform;
         _audioSource.PlayOneShot(_laserFireAudioClip);
     }
+
+    
     /// <summary>
     /// Called when a <see cref="Laser"/> has collided with this enemy.
     /// </summary>

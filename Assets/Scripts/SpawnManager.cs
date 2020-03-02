@@ -21,6 +21,12 @@ public class SpawnManager : MonoBehaviour
     [SerializeField]
     private Powerup[] powerups;
 
+    [SerializeField]
+    private float _probabilityForSuperWeapon = .10f;
+
+
+    [SerializeField] private Powerup[] superPowerups;
+
     private GameObject _enemyContainer;
     private float _enemySpawnRate = 5;
 
@@ -29,13 +35,16 @@ public class SpawnManager : MonoBehaviour
     private float _powerupSpawnRateMin = 3f;
     private float _powerupSpawnRateMax = 7f;
 
-    private static readonly PowerupType[] PowerupTypes = (PowerupType[]) Enum.GetValues(typeof(PowerupType));
-    private static readonly int NumberOfPowerupTypes = PowerupTypes.Length;
+    private static readonly PowerupType[] RegularPowerupTypes = Powerup.GetPowerupTypes();
+    private static readonly PowerupType[] SuperPowerupTypes = Powerup.GetPowerupTypes(PowerupFilter.Super);
+    
+    private static readonly int NumberOfRegularPowerupTypes = RegularPowerupTypes.Length;
+    private static readonly int NumberOfSuperPowerupTypes = SuperPowerupTypes.Length;
 
     
     void Start()
     {
-        _player.PlayerDeath += OnPlayerDeath;
+        _player.PlayerLivesChanged += OnPlayerLivesChanged;
         var parentTransform = gameObject.transform;
         _enemyContainer = new GameObject("Enemy Container");
         _enemyContainer.transform.parent = parentTransform;
@@ -65,8 +74,8 @@ public class SpawnManager : MonoBehaviour
         {
             var newEnemy = Instantiate(_enemy, Enemy.GetSpawnPoint(), Quaternion.identity);
             newEnemy.transform.parent = _enemyContainer.transform;
-            newEnemy.EnemyDeath += _player.OnEnemyDeath;
-            newEnemy.PlayerCollision += _player.OnEnemyCollision;
+            
+            _player.RegisterEnemyHandlers(newEnemy);
             yield return new WaitForSeconds(_enemySpawnRate);
         }
 
@@ -86,14 +95,19 @@ public class SpawnManager : MonoBehaviour
         while (_isSpawningPowerups)
         {
             var spawnXPoint = Random.Range(Globals.PlayerBounds.min.x, Globals.PlayerBounds.max.x);
-            var powerupToSpawn = PowerupTypes[Random.Range(0, NumberOfPowerupTypes)];
-            //powerupToSpawn = PowerupType.TripleShot;
+            var powerupTypeProbability = Random.value;
+            bool isSuperPowerup = powerupTypeProbability >= _probabilityForSuperWeapon;
+
             var spawnPosition = new Vector3(spawnXPoint, Globals.ScreenBounds.max.y);
-            Powerup newPowerup = Instantiate(powerups[Random.Range(0, powerups.Length)], spawnPosition, Quaternion.identity);
+            var powerupToInstantiate = isSuperPowerup
+                ? superPowerups[Random.Range(0, superPowerups.Length - 1)]
+                : powerups[Random.Range(0, powerups.Length - 1)];
+
+            Powerup newPowerup = Instantiate(powerupToInstantiate, spawnPosition, Quaternion.identity);
 
             if (newPowerup != null)
             {
-                newPowerup.PowerupCollected += _player.OnPowerupCollected;
+                _player.RegisterPowerupHandlers(newPowerup);
             }
 
             yield return new WaitForSeconds(Random.Range(_powerupSpawnRateMin, _powerupSpawnRateMax));
@@ -104,13 +118,13 @@ public class SpawnManager : MonoBehaviour
     #endregion
 
     #region  Player Event Handlers
-    void OnPlayerDeath(Player player)
+    void OnPlayerLivesChanged(Player player)
     {
         if (player.Lives > 0)
         {
             return;
         }
-        // Multiplayer?
+        // TODO: Multiplayer?
         _isSpawningEnemies = false;
         _isSpawningPowerups = false;
         Clear<Laser>();

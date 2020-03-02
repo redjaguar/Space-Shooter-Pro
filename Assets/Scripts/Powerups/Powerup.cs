@@ -9,15 +9,26 @@ using UnityEngine.Serialization;
 
 namespace Assets.Scripts.Powerups
 {
+    public class SuperPowerupAttribute : Attribute
+    {
+    }
     /// <summary>
     /// Types of powerups available.
     /// </summary>
     public enum PowerupType
     {
+        AmmoRefill,
+
+        [SuperPowerup]
+        Mine,
         /// <summary>
         /// Shield powerup.
         /// </summary>
         Shield,
+        /// <summary>
+        /// Ship powerup
+        /// </summary>
+        Ship,
         /// <summary>
         /// Speedup powerup.
         /// </summary>
@@ -25,8 +36,16 @@ namespace Assets.Scripts.Powerups
         /// <summary>
         /// Triple shot powerup.
         /// </summary>
-        TripleShot
+        TripleShot,
+        
 
+    }
+
+    public enum PowerupFilter
+    {
+        All,
+        Super,
+        Regular
     }
 
     /// <summary>
@@ -53,10 +72,26 @@ namespace Assets.Scripts.Powerups
         [SerializeField]
         private AudioClip _audioClip;
 
-        void Start()
+        public static PowerupType[] GetPowerupTypes(PowerupFilter filter = PowerupFilter.Regular)
         {
-            //_audioClip = AudioUtilities.Amplify(_audioClip, 6f);
+            var allPowerupTypes = (PowerupType[]) Enum.GetValues(typeof(PowerupType));
+
+            switch (filter)
+            {
+                case PowerupFilter.All:
+                    return allPowerupTypes;
+                case PowerupFilter.Super:
+                    return allPowerupTypes.Where(a =>
+                        a.GetType().GetCustomAttributesData().Any(e => e.AttributeType == typeof(SuperPowerupAttribute))).ToArray();
+                case PowerupFilter.Regular:
+                    return allPowerupTypes.Where(a =>
+                        a.GetType().GetCustomAttributesData().Any(e => e.AttributeType == typeof(SuperPowerupAttribute)) ==
+                        false).ToArray();
+            }
+
+            return new PowerupType[0];
         }
+        
         private void OnTriggerEnter2D(Collider2D other)
         {
             if (other.tag.Equals("Player"))
@@ -79,6 +114,7 @@ namespace Assets.Scripts.Powerups
 
         void Update()
         {
+            
             transform.Translate(Vector3.down * (powerupSpeed * Time.deltaTime));
             if (!Globals.ScreenBounds.Contains(transform.position))
             {

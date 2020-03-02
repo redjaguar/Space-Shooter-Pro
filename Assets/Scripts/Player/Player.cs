@@ -2,9 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using Assets.Helper_Classes;
+using Assets.Scripts.Player;
 using Assets.Scripts.Powerups;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 #pragma  warning disable CS0649
 public class Player : MonoBehaviour
@@ -18,15 +20,19 @@ public class Player : MonoBehaviour
     public Bounds PlayerBounds => Globals.PlayerBounds;
     
     /// <summary>
-    /// Delegate for the <see cref="PlayerDeath"/> event.
+    /// Delegate for the <see cref="Player.PlayerLivesChanged"/> event.
     /// </summary>
     /// <param name="player">The player that is the source of the event.</param>
-    public delegate void PlayerDeathEventHandler(Player player);
+    public delegate void PlayerLivesChangedEventHandler(Player player);
 
     /// <summary>
     /// Event fired when this player dies.
     /// </summary>
-    public event PlayerDeathEventHandler PlayerDeath;
+    public event PlayerLivesChangedEventHandler PlayerLivesChanged;
+
+    public delegate void ShotFiredEventHandler(int shotsLeft);
+
+    public event ShotFiredEventHandler ShotFired;
 
     /// <summary>
     /// Y axis offset for the laser when fired.
@@ -46,6 +52,11 @@ public class Player : MonoBehaviour
     [SerializeField] 
     private GameObject _tripleShotPreFab;
 
+    [SerializeField]
+    private GameObject _minePrefab;
+
+    [SerializeField]
+    private bool _minesActive;
     /// <summary>
     /// Rate of fire limit in seconds for the lasers.
     /// </summary>
@@ -57,11 +68,14 @@ public class Player : MonoBehaviour
     /// </summary>
     private float _fireDelayTime = -1f;
 
+    [SerializeField]
+    private int _maximumLives = 3;
+
     /// <summary>
     /// Number of lives this player has.
     /// </summary>
     [SerializeField]
-    private int _lives = 3;
+    private int _lives;
 
     /// <inheritdoc cref="_lives"/>
     public int Lives => _lives;
@@ -83,16 +97,16 @@ public class Player : MonoBehaviour
     [SerializeField]
     private float _speedBoostFactor = 2f;
 
-    /// <summary>
-    /// Whether or not shields are currently active.
-    /// </summary>
-    [SerializeField]
-    private bool _shieldsActive;
+    ///// <summary>
+    ///// Whether or not shields are currently active.
+    ///// </summary>
+    //[SerializeField]
+    //private bool _shieldsActive;
 
     /// <summary>
-    /// The players shields.
+    /// This players shields.
     /// </summary>
-    private GameObject _shields;
+    private Shields _shields;
 
     /// <summary>
     /// This players current score.
@@ -134,6 +148,12 @@ public class Player : MonoBehaviour
     [SerializeField]
     private AudioClip _explosionAudio;
 
+    /// <summary>
+    /// AudioCLip to use when attempting to fire with no ammo.
+    /// </summary>
+    [SerializeField]
+    private AudioClip _noAmmoAudioClip;
+
     private Thruster _thruster;
     public Thruster Thruster => _thruster;
     /// <summary>
@@ -147,13 +167,20 @@ public class Player : MonoBehaviour
     /// </summary>
     private AudioSource _audioSource;
 
+    [SerializeField]
+    private int _maximumLaserShots = 15;
+
+    private int _laserShotsLeft = 15;
+
     // Start is called before the first frame update
     void Start()
     {
+        _lives = _maximumLives;
+        
         transform.position = Vector3.zero;
-        _shields = GameObject.FindWithTag("Player Shields");
-        _shields.SetActive(false);
-
+        _shields = GameObject.FindWithTag("Player Shields")?.GetComponent<Shields>();
+        Assert.IsNotNull(_shields, "_shields != null");
+        _shields.gameObject.SetActive(false);
         _spriteAnimator = _exlposionAnim.GetComponent<Animator>();
         Assert.IsNotNull(_spriteAnimator, "_spriteAnimator != null");
 
@@ -165,6 +192,9 @@ public class Player : MonoBehaviour
         {
             speed /= fuelLevel <= 0 ? _thruster.SpeedScalar : 1;
         };
+
+        _camera = GameObject.FindWithTag("MainCamera")?.GetComponent<Camera>();
+        Assert.IsNotNull(_camera, "_camera != null");
     }
 
     void Update()
@@ -172,24 +202,28 @@ public class Player : MonoBehaviour
         Move();
         if (Input.GetKeyDown(KeyCode.Space) && CanFire)
         {
-            FireLaser();
+            FireWeapon();
         }
 
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            if (!_thruster.IsFiring)
+            if (_thruster.IsFiring)
             {
-                _thruster.TurnOn();
-                speed *= Thruster.SpeedScalar;
+                return;
             }
+
+            _thruster.TurnOn();
+            speed *= Thruster.SpeedScalar;
         }
         else if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            if (_thruster.IsFiring)
+            if (!_thruster.IsFiring)
             {
-                _thruster.TurnOff();
-                speed /= Thruster.SpeedScalar;
+                return;
             }
+
+            _thruster.TurnOff();
+            speed /= Thruster.SpeedScalar;
         }
 
     }
@@ -197,14 +231,43 @@ public class Player : MonoBehaviour
     /// <summary>
     /// Spawns normal laser or a triple shot laser if the triple shot is active.
     /// </summary>
-    void FireLaser()
+    void FireWeapon()
     {
-        _fireDelayTime = Time.time + _fireRate;
+        
         var playerPosition = transform.position;
+
+        if (_laserShotsLeft == 0 && !_minesActive)
+        {
+            AudioSource.PlayClipAtPoint(_noAmmoAudioClip, playerPosition);
+            return;
+        }
+
+        _fireDelayTime = Time.time + _fireRate;
+
+        if (_minesActive)
+        {
+            var mines = Instantiate(_minePrefab, playerPosition, Quaternion.identity);
+            return;
+        }
+
         var newTripleShot = Instantiate(_tripleShotActive ? _tripleShotPreFab : _laserPreFab, _tripleShotActive ? playerPosition : playerPosition + new Vector3(0, _laserOffset), Quaternion.identity);
         _audioSource.PlayOneShot(_laserShotAudioClip);
+        _laserShotsLeft--;
+        ShotFired?.Invoke(_laserShotsLeft);
     }
-    
+
+    public void RegisterPowerupHandlers(Powerup powerup)
+    {
+        powerup.PowerupCollected += OnPowerupCollected;
+        powerup.PowerupCollected += _shields.OnPowerupCollected;
+    }
+
+    public void RegisterEnemyHandlers(Enemy enemy)
+    {
+        enemy.PlayerCollision += OnEnemyCollision;
+        enemy.EnemyDeath += OnEnemyDeath;
+    }
+
     /// <summary>
     /// Callback for the <see cref="Powerup.PowerupCollected"/>.
     /// </summary>
@@ -213,8 +276,22 @@ public class Player : MonoBehaviour
     {
         switch (powerup.PowerupType)
         {
-            case PowerupType.Shield:
-                EnableShields();
+            case PowerupType.AmmoRefill:
+                _laserShotsLeft = _maximumLaserShots;
+                ShotFired?.Invoke(_laserShotsLeft);
+                break;
+            case PowerupType.Mine:
+                _minesActive = true;
+                StartCoroutine(DisablePowerup(powerup.PowerupType));
+                break;
+            case PowerupType.Ship:
+                if (_lives < 3)
+                {
+                    _lives++;
+                    UpdateHurtVisibility();
+                    PlayerLivesChanged?.Invoke(this);
+                    
+                }
                 break;
             case PowerupType.Speedup:
                 speed *= _speedBoostFactor;
@@ -225,10 +302,13 @@ public class Player : MonoBehaviour
                 StartCoroutine(DisablePowerup(powerup.PowerupType));
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                Debug.LogWarningFormat("Unknown powerup: {0}", powerup.PowerupType);
+                break;
+
         }
 
     }
+
 
     private bool ignoreNextLaser;
 
@@ -268,10 +348,8 @@ public class Player : MonoBehaviour
         }
     }
     
-    //TODO: See if one method will work with a "powerup type" parameter.
-
     /// <summary>
-    /// Coroutine to disable the triple shot powerup.
+    /// Coroutine to disable powerups.
     /// </summary>
     /// <returns>Coroutine</returns>
     IEnumerator DisablePowerup(PowerupType powerupType)
@@ -279,8 +357,8 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(5f);
         switch (powerupType)
         {
-            case PowerupType.Shield:
-                DisableShields();
+            case PowerupType.Mine:
+                _minesActive = false;
                 break;
             case PowerupType.Speedup:
                 _speedBoostFactor /= _speedBoostFactor;
@@ -293,46 +371,8 @@ public class Player : MonoBehaviour
         yield return null;
     }
 
-    ///// <summary>
-    ///// Coroutine to disable the triple shot powerup.
-    ///// </summary>
-    ///// <returns>Coroutine</returns>
-    //IEnumerator DisableTripleShot()
-    //{
-    //    yield return new WaitForSeconds(5f);
-    //    _tripleShotActive = false;
-    //    yield return null;
-    //}
-
-    ///// <summary>
-    ///// Coroutine to disable the speed boost.
-    ///// </summary>
-    ///// <returns></returns>
-    //IEnumerator DisableSpeedBoost()
-    //{
-    //    yield return new WaitForSeconds(5f);
-    //    _speedBoostFactor /= _speedBoostFactor;
-    //    yield return null;
-    //}
-
-    /// <summary>
-    /// Enables the shields
-    /// </summary>
-    void EnableShields()
-    {
-        _shieldsActive = true;
-        _shields.SetActive(true);
-    }
-
-    /// <summary>
-    /// Disables the shields.
-    /// </summary>
-    void DisableShields()
-    {
-        _shieldsActive = false;
-        _shields.SetActive(false);
-
-    }
+   
+    
 
     /// <summary>
     /// Moves the player while restricting the movement to be within <see cref="PlayerBounds"/>.
@@ -369,14 +409,14 @@ public class Player : MonoBehaviour
     /// <param name="enemy">Enemy that is the source of the event.</param>
     public void OnEnemyCollision(Enemy enemy)
     {
-        if (_shieldsActive)
+        if (_shields.Active)
         {
-            DisableShields();
+            _shields.Hit();
             return;
         }
 
         _lives--;
-        PlayerDeath?.Invoke(this);
+        PlayerLivesChanged?.Invoke(this);
         if (_lives < 1)
         {
             _spriteAnimator.SetTrigger(AnimationTriggers.EnemyDeath);
@@ -384,6 +424,25 @@ public class Player : MonoBehaviour
             Destroy(this.gameObject, .50f);
         }
         UpdateHurtVisibility();
+        StartCoroutine(CameraShake());
+    }
+
+    private Camera _camera;
+
+    IEnumerator CameraShake()
+    {
+
+        _camera.transform.Rotate(Vector3.forward, 1f);
+        yield return new WaitForSeconds(Time.deltaTime);
+        _camera.transform.Rotate(Vector3.forward, -2f);
+        yield return new WaitForSeconds(Time.deltaTime);
+        _camera.transform.Rotate(Vector3.forward, 2f);
+        yield return new WaitForSeconds(Time.deltaTime);
+        _camera.transform.Rotate(Vector3.forward, -2f);
+        yield return new WaitForSeconds(Time.deltaTime);
+        _camera.transform.Rotate(Vector3.forward, 2f);
+        yield return new WaitForSeconds(Time.deltaTime);
+
     }
 
     /// <summary>
@@ -393,8 +452,13 @@ public class Player : MonoBehaviour
     {
         switch (Lives)
         {
+            case 3:
+                _leftWingHurtAnim.SetActive(false);
+                _rightWingHurtAnim.SetActive(false);
+                break;
             case 2:
                 _leftWingHurtAnim.SetActive(true);
+                _rightWingHurtAnim.SetActive(false);
                 break;
             case 1:
                 _rightWingHurtAnim.SetActive(true);

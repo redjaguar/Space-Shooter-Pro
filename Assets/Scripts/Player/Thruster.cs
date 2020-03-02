@@ -26,7 +26,8 @@ public class Thruster : MonoBehaviour
 
     [SerializeField] private float _speedScalar = 2f;
 
-    private float _duration = 15f;
+    [SerializeField]
+    private float _duration = 3f;
     private float _fuelLevel = 1f;
     private float _burnRatePerSecond;
 
