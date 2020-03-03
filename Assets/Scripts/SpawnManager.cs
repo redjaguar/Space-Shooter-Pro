@@ -96,12 +96,12 @@ public class SpawnManager : MonoBehaviour
         {
             var spawnXPoint = Random.Range(Globals.PlayerBounds.min.x, Globals.PlayerBounds.max.x);
             var powerupTypeProbability = Random.value;
-            bool isSuperPowerup = powerupTypeProbability >= _probabilityForSuperWeapon;
+            bool isSuperPowerup = powerupTypeProbability <= _probabilityForSuperWeapon;
 
             var spawnPosition = new Vector3(spawnXPoint, Globals.ScreenBounds.max.y);
             var powerupToInstantiate = isSuperPowerup
-                ? superPowerups[Random.Range(0, superPowerups.Length - 1)]
-                : powerups[Random.Range(0, powerups.Length - 1)];
+                ? superPowerups[Random.Range(0, superPowerups.Length)]
+                : powerups[Random.Range(0, powerups.Length)];
 
             Powerup newPowerup = Instantiate(powerupToInstantiate, spawnPosition, Quaternion.identity);
 
